@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ASL Prediction</title>
+</head>
+<body>
+  <h1>ASL Sign Detection (Backend Powered)</h1>
+  <video id="webcam" autoplay playsinline width="300" height="250"></video>
+  <p id="result">Prediction: ...</p>
+
+  <script>
+    const video = document.getElementById("webcam");
+    const result = document.getElementById("result");
+
+    async function setupCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+    }
+
+    async function captureAndSend() {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL("image/jpeg");
+      const response = await fetch("http://localhost:5000/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl })
+      });
+
+      const json = await response.json();
+      result.innerText = `Prediction: ${json.prediction} (${(json.confidence*100).toFixed(2)}%)`;
+
+      requestAnimationFrame(captureAndSend);
+    }
+
+    setupCamera().then(captureAndSend);
+  </script>
+</body>
+</html>
